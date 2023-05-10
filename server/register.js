@@ -2,8 +2,12 @@
 
 const knex = require('knex')
 module.exports = async ({ strapi }) => {
+
+  const strapiVersion = strapi.config.get('info.strapi');
+
   strapi.postgis={
-    enabled:false,
+    enabled: false,
+    initialized: false,
     spatialColumns: [],
     spatialTables: {}
   }
@@ -13,9 +17,12 @@ module.exports = async ({ strapi }) => {
     return;
   };
 
+  if( strapiVersion.localeCompare('4.5.0', undefined, { numeric: true, sensitivity: 'base' }) < 0 ) {
+    strapi.log.info(`Strapi PostGIS require Strapi 4.5.0 or above.`);
+    return;
+  }
 
-
-  //lets try enabling postgis on the databas
+  //lets try enabling postgis on the database
   try {
     const pg = knex(strapi.config.database.connection);
   
@@ -28,10 +35,13 @@ module.exports = async ({ strapi }) => {
       return;
     }
 
+    // issue #16310 - Strapi versions up to 4.9.2 fails to handle relationships if a content-type contains a geometry (PostGIS) field
+    const hasJsonBug = ( strapiVersion.localeCompare('4.10.0', undefined, { numeric: true, sensitivity: 'base' }) < 0 );
+
     strapi.customFields.register({
       name: 'map',
       plugin: 'postgis',
-      type: 'json',
+      type: hasJsonBug ? 'text' : 'json',
     });
   
     pg.destroy()

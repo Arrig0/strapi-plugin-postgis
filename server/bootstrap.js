@@ -47,6 +47,7 @@ module.exports = async ({ strapi }) => {
     let spsun = new spatialLifecyclesSubscriber(strapi)
     strapi.db.lifecycles.subscribe(spsun)
 
+    strapi.postgis['initialized'] = true;
 
     let pgVersion = await pgManagerService.getWelcomeMessage()
     strapi.log.info(pgVersion)
