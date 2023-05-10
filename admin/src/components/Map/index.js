@@ -74,7 +74,7 @@ const Map = ({ name, onChange, value, intlLabel, disabled, error, description, r
             let map = L.map(`map_${name}`, {
                 center: [66.51555389267186, -98.98946422681475],
                 zoom: 4,
-                maxZoom: 22,
+                maxZoom: 18,
                 // pmIgnore: false
             });
 
@@ -113,7 +113,7 @@ const Map = ({ name, onChange, value, intlLabel, disabled, error, description, r
 
             let osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
             let osmAttrib = '&copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-            let osm = L.tileLayer(osmUrl, { maxZoom: 18, attribution: osmAttrib }).addTo(map);
+            let osm = L.tileLayer(osmUrl, { maxZoom: 18, maxNativeZoom: 19, attribution: osmAttrib }).addTo(map);
             // L.control.layers({
             //     'OSM': osm.addTo(map),
             //     "Google": L.tileLayer('http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}', {
