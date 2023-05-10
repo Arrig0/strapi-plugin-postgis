@@ -58,91 +58,99 @@ module.exports = ({ strapi }) => {
         return result.rows[0].postgis_version;
     }
 
+    const pgService = async function() {
+        return strapi.postgis['initialized'] ? strapi.postgis : false;
+    }
 
     const getPgContentTypes = async function () {
-            const pGMetadata = await getPgMetadataTable();
 
-            strapi.db.config.models.forEach((model,index) => {
-                const contenType = strapi.contentTypes[model.uid];
+        if( strapi.postgis['initialized'] ) {
+            return strapi.postgis;
+        }
 
-                Object.keys(model.attributes).forEach((columnName) => {
-                    let column = model.attributes[columnName]
-                    pGMetadata.rows.forEach(row => {
-                        if (row['f_table_name'] === model.tableName && row['f_geometry_column'] === columnName) {
-                            column.isSpatial = true
-                            column.srid = row['srid']
-                            column.coord_dimension = row['coord_dimension']
-                            column.f_table_schema = row['f_table_schema']
-                            column.geoType = row['type']
+        const pGMetadata = await getPgMetadataTable();
 
-                            strapi.postgis.spatialColumns.push(`${model.uid}:${columnName}`)
-                            if (!strapi.postgis.spatialTables[model.uid]) {
-                            strapi.postgis.spatialTables[model.uid] = {}
-                            }
-                            strapi.postgis.spatialTables[model.uid][columnName] = contenType.attributes[columnName]
+        strapi.db.config.models.forEach((model,index) => {
+            const contenType = strapi.contentTypes[model.uid];
+
+            Object.keys(model.attributes).forEach((columnName) => {
+                let column = model.attributes[columnName]
+                pGMetadata.rows.forEach(row => {
+                    if (row['f_table_name'] === model.tableName && row['f_geometry_column'] === columnName) {
+                        column.isSpatial = true
+                        column.srid = row['srid']
+                        column.coord_dimension = row['coord_dimension']
+                        column.f_table_schema = row['f_table_schema']
+                        column.geoType = row['type']
+
+                        strapi.postgis.spatialColumns.push(`${model.uid}:${columnName}`)
+                        if (!strapi.postgis.spatialTables[model.uid]) {
+                        strapi.postgis.spatialTables[model.uid] = {}
                         }
-                    })
+                        strapi.postgis.spatialTables[model.uid][columnName] = contenType.attributes[columnName]
+                    }
                 })
             })
+        })
 
 
-            return strapi.postgis
-            //     // registeration phase
-            //     strapi.postgis = {
-            //         spatialColumns: [],
-            //         spatialTables: {}
-            //     }
+        return strapi.postgis
+        //     // registeration phase
+        //     strapi.postgis = {
+        //         spatialColumns: [],
+        //         spatialTables: {}
+        //     }
+            
+            
+
+
+        // let spatialTables = {}
+        // strapi.db.config.models.forEach((model,index) => {
+        //     Object.keys(model.attributes).forEach((columnName) => {
+        //         let column = model.attributes[columnName]
                 
-                
+        //         if (pgGeometryTypes().includes(column.type.toUpperCase())) {
+        //             column.geoType = column.type .toUpperCase()
+        //             column.spType = 'geometry'
+        //             // column.type = 'json'
+        //             column.isSpatial = true
+        //             strapi.db.config.models[index].attributes[columnName].type='json'
+        //             strapi.db.config.models[index].attributes[columnName].type='json'
+        //             if (!spatialTables[model.tableName]) {
+        //                 spatialTables[model.tableName] = {
+        //                     'MODEL_OBJECT':model
+        //                 }
+        //             }
+        //             spatialTables[model.tableName][columnName] = column;
+        //             column.pluginOptions = column.pluginOptions || {}
+        //             column.pluginOptions.postgis = { geomType: column.geoType, srid: 0, ...column.pluginOptions.postgis }
+
+        //             pGMetadata.rows.forEach(row => {
+        //                 if (row['f_table_name'] === model.tableName && row['f_geometry_column'] === columnName) {
+        //                     //it already exists. just check if column has changed so drop it
+        //                     // TODO: fix gemetry <-> geography change
+        //                     if (row['srid'] !== column.pluginOptions.postgis.srid || column.pluginOptions.postgis.geomType !== row['type']) {
+        //                         spatialTables[model.tableName][columnName]['dropFirst'] = true;
+        //                     } else {
+        //                         spatialTables[model.tableName][columnName]['exists'] = true;
+        //                         spatialTables[model.tableName][columnName]['f_table_schema'] = row['f_table_schema'];
+        //                         spatialTables[model.tableName][columnName]['coord_dimension'] = row['coord_dimension'];
+        //                         spatialTables[model.tableName][columnName]['srid'] = row['srid'];
+        //                         spatialTables[model.tableName][columnName]['geoType'] = row['type'];
+        //                     }
+        //                 }
+        //                 // row['f_table_schema']
+        //                 // row['coord_dimension']
+        //                 // row['srid']
+        //                 // row['type']
+        //             })
 
 
-            // let spatialTables = {}
-            // strapi.db.config.models.forEach((model,index) => {
-            //     Object.keys(model.attributes).forEach((columnName) => {
-            //         let column = model.attributes[columnName]
-                   
-            //         if (pgGeometryTypes().includes(column.type.toUpperCase())) {
-            //             column.geoType = column.type .toUpperCase()
-            //             column.spType = 'geometry'
-            //             // column.type = 'json'
-            //             column.isSpatial = true
-            //             strapi.db.config.models[index].attributes[columnName].type='json'
-            //             strapi.db.config.models[index].attributes[columnName].type='json'
-            //             if (!spatialTables[model.tableName]) {
-            //                 spatialTables[model.tableName] = {
-            //                     'MODEL_OBJECT':model
-            //                 }
-            //             }
-            //             spatialTables[model.tableName][columnName] = column;
-            //             column.pluginOptions = column.pluginOptions || {}
-            //             column.pluginOptions.postgis = { geomType: column.geoType, srid: 0, ...column.pluginOptions.postgis }
-
-            //             pGMetadata.rows.forEach(row => {
-            //                 if (row['f_table_name'] === model.tableName && row['f_geometry_column'] === columnName) {
-            //                     //it already exists. just check if column has changed so drop it
-            //                     // TODO: fix gemetry <-> geography change
-            //                     if (row['srid'] !== column.pluginOptions.postgis.srid || column.pluginOptions.postgis.geomType !== row['type']) {
-            //                         spatialTables[model.tableName][columnName]['dropFirst'] = true;
-            //                     } else {
-            //                         spatialTables[model.tableName][columnName]['exists'] = true;
-            //                         spatialTables[model.tableName][columnName]['f_table_schema'] = row['f_table_schema'];
-            //                         spatialTables[model.tableName][columnName]['coord_dimension'] = row['coord_dimension'];
-            //                         spatialTables[model.tableName][columnName]['srid'] = row['srid'];
-            //                         spatialTables[model.tableName][columnName]['geoType'] = row['type'];
-            //                     }
-            //                 }
-            //                 // row['f_table_schema']
-            //                 // row['coord_dimension']
-            //                 // row['srid']
-            //                 // row['type']
-            //             })
-
-
-            //         }
-            //     })
-            // })
-            // return spatialTables;
-        }
+        //         }
+        //     })
+        // })
+        // return spatialTables;
+    }
 
     const isPgAvailable = async function(tryToEnable=false,db){
         
@@ -200,6 +208,7 @@ module.exports = ({ strapi }) => {
         async getWelcomeMessage() {
             return `Welcome to Strapi Postgis 🚀 + 🐘 + 🗺️ | ${await pgVersion()}`;
         },
+        pgService,
         getPgMetadataTable,
         createPgExtension,
         pgVersion,
